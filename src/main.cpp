@@ -109,15 +109,7 @@ int main()
         glm::vec3 cameraRight = glm::normalize(glm::cross(cameraDirection, up));
         glm::vec3 cameraUp = glm::normalize(glm::cross(cameraRight, cameraDirection));
 
-        glm::mat4 cameraPosMat(1.0f);
-        cameraPosMat[3][0] = -cameraPos.x;
-        cameraPosMat[3][1] = -cameraPos.y;
-        cameraPosMat[3][2] = -cameraPos.z;
-        glm::mat4 cameraRotateMat(1.0f);
-        cameraRotateMat[0] = glm::vec4(cameraRight.x, cameraUp.x, -cameraDirection.x, 0.0f);
-        cameraRotateMat[1] = glm::vec4(cameraRight.y, cameraUp.y, -cameraDirection.y, 0.0f);
-        cameraRotateMat[2] = glm::vec4(cameraRight.z, cameraUp.z, -cameraDirection.z, 0.0f);
-        view = cameraRotateMat * cameraPosMat;
+        view = glm::lookAt(cameraPos, cameraPos + cameraDirection, cameraUp);
 
         glm::vec3 pyramidPosition[] = {
             glm::vec3(0.0f, 0.0f, -2.5f),
