@@ -95,7 +95,7 @@ int main()
 
     int width1, height1, nrChannels1;
 
-    unsigned char *data1 = stbi_load("Textures/container.jpg", &width1, &height1, &nrChannels1, 0);
+    unsigned char *data1 = stbi_load("Textures/cloth.jpg", &width1, &height1, &nrChannels1, 0);
 
     if (!data1)
     {
