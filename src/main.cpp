@@ -6,7 +6,6 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -17,6 +16,7 @@
 #include "Libs/Shader.h"
 #include "Libs/Window.h"
 #include "Libs/Mesh.h"
+#include "Libs/stb_image.h"
 
 const GLint WIDTH = 800, HEIGHT = 600;
 
@@ -41,10 +41,11 @@ void CreateTriangle()
 {
     GLfloat vertices[] =
         {
-            -1.0f, -1.0f, 0.0f,
-            0.0f, -1.0f, 1.0f,
-            1.0f, -1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f};
+            // pos                  //TexCoord
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+            0.0, -1.0f, 1.0f, 0.5f, 0.0f,
+            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.5f, 1.0f};
 
     unsigned int indices[] =
         {
@@ -63,7 +64,7 @@ void CreateTriangle()
         };
 
     Mesh *obj1 = new Mesh();
-    obj1->CreateMesh(vertices, indices, 12, 12);
+    obj1->CreateMesh(vertices, indices, 20, 12);
     for (int i = 0; i < 10; i++)
     {
         meshList.push_back(obj1);
@@ -80,8 +81,42 @@ int main()
 
     GLuint uniformModel = 0, uniformProjection = 0, uniformView = 0;
 
-    glm::mat4 projection = glm::perspective(45.0f, (GLfloat) mainWindow.getBufferWidth() / (GLfloat)mainWindow.getBufferHeight(), 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(45.0f, (GLfloat)mainWindow.getBufferWidth() / (GLfloat)mainWindow.getBufferHeight(), 0.1f, 100.0f);
     // glm::mat4 projection = glm::ortho(-4.0f, 4.0f, -3.0f, 3.0f, 0.1f, 100.0f);
+
+    unsigned int texture1;
+
+    glGenTextures(1, &texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int width1, height1, nrChannels1;
+
+    unsigned char *data1 = stbi_load("Textures/container.jpg", &width1, &height1, &nrChannels1, 0);
+
+    if (!data1)
+    {
+        std::cerr << "Failed to load texture: " << stbi_failure_reason() << "\n";
+    }
+    else
+    {
+        // Handle 1/3/4 channel images correctly
+        GLenum format = GL_RGB;
+        if (nrChannels1 == 1)
+            format = GL_RED;
+        else if (nrChannels1 == 3)
+            format = GL_RGB;
+        else if (nrChannels1 == 4)
+            format = GL_RGBA;
+        // Avoid row-alignment issues for non-4-byte widths
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width1, height1, 0, format, GL_UNSIGNED_BYTE, data1);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        stbi_image_free(data1);
+    }
 
     while (!mainWindow.getShouldClose())
     {
@@ -100,8 +135,8 @@ int main()
 
         glm::mat4 view(1.0f);
 
-        glm::vec3 cameraPos = glm::vec3(1.0f, 0.5f, 2.0f);
-        glm::vec3 cameraTarget = glm::vec3(0.0f, -0.3f, -1.0f);
+        glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 10.0f);
+        glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
         glm::vec3 cameraDirection = glm::normalize(cameraTarget - cameraPos);
@@ -135,6 +170,10 @@ int main()
             glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
             glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
+            GLint uniformTexture1 = shaderList[0].GetUniformLocation("texture1");
+            glUniform1i(uniformTexture1, 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture1);
             meshList[i]->RenderMesh();
         }
 
