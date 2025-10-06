@@ -29,6 +29,8 @@ static const char *vShader = "Shaders/shader.vert";
 // Fragment Shader
 static const char *fShader = "Shaders/shader.frag";
 
+glm::vec3 lightColour = glm::vec3(0.0f, 1.0f, 1.0f);
+
 void CreateShaders()
 {
     Shader *shader1 = new Shader();
@@ -184,11 +186,14 @@ int main()
             glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
             glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-
+            
             GLint uniformTexture1 = shaderList[0].GetUniformLocation("texture1");
             glUniform1i(uniformTexture1, 0);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture1);
+            
+            glUniform3fv(shaderList[0].GetUniformLocation("lightColour"), 1, (GLfloat *)&lightColour);
+
             meshList[i]->RenderMesh();
         }
 
