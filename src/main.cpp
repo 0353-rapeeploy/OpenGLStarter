@@ -23,7 +23,6 @@ const GLint WIDTH = 800, HEIGHT = 600;
 Window mainWindow;
 std::vector<Mesh *> meshList;
 std::vector<Shader> shaderList;
-
 // Vertex Shader
 static const char *vShader = "Shaders/shader.vert";
 
@@ -71,12 +70,28 @@ void CreateTriangle()
     }
 }
 
+void CreateOBJ()
+{
+    Mesh *obj2 = new Mesh();
+    bool loaded = obj2->CreateMeshFromOBJ("Models/suzanne.obj");
+    if (loaded)
+    {
+        for (size_t i = 0; i < 10; i++)
+        {
+            meshList.push_back(obj2);
+        }
+        
+    } else {
+        std::cout << "OBJ loaded fail!" << std::endl;
+    }
+}
+
 int main()
 {
     mainWindow = Window(WIDTH, HEIGHT, 3, 3);
     mainWindow.initialise();
 
-    CreateTriangle();
+    CreateOBJ();
     CreateShaders();
 
     GLuint uniformModel = 0, uniformProjection = 0, uniformView = 0;
@@ -95,7 +110,7 @@ int main()
 
     int width1, height1, nrChannels1;
 
-    unsigned char *data1 = stbi_load("Textures/cloth.jpg", &width1, &height1, &nrChannels1, 0);
+    unsigned char *data1 = stbi_load("Textures/uvmap.png", &width1, &height1, &nrChannels1, 0);
 
     if (!data1)
     {
