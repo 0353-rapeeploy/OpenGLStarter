@@ -5,12 +5,18 @@ in vec2 TexCoord;
 in vec3 FragPos;
 in vec3 Normal;
 out vec4 colour;
+uniform vec3 viewPos;
 
 uniform vec3 lightColour;
 uniform vec3 lightPos;
-uniform vec3 viewPos;
 
 uniform sampler2D texture1;
+
+// -------------Lab7-8------------
+// void main()
+// {
+//     colour = vCol;
+// }
 
 vec3 ambientLight()
 {
@@ -44,5 +50,5 @@ vec3 specularLight()
 
 void main()
 {
-    colour = texture(texture1, TexCoord) * vec4(ambientLight() + diffuseLight() + specularLight(), 1.0f);
+    colour = texture(texture1, TexCoord) * vec4(ambientLight() + diffuseLight() + specularLight(),  1.0f);
 }

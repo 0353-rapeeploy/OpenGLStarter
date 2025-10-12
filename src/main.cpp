@@ -33,7 +33,7 @@ GLuint texture1;
 glm::vec3 lightColour = glm::vec3(1.0f, 1.0f, 1.0f);
 glm::vec3 lightPos = glm::vec3(-10.0f, 0.0f, 10.0f);
 
-Mesh* light;
+Mesh *light;
 static const char *lightVShader = "Shaders/lightShader.vert";
 static const char *lightFShader = "Shaders/lightShader.frag";
 
@@ -42,11 +42,14 @@ static const char *vShader = "Shaders/shader.vert";
 // Fragment Shader
 static const char *fShader = "Shaders/shader.frag";
 
-Mesh* bg;
+Mesh *bg;
 
-static const char* bgVShader = "Shaders/bgShader.vert";
-static const char* bgFShader = "Shaders/bgShader.frag";
+static const char *bgVShader = "Shaders/bgShader.vert";
+static const char *bgFShader = "Shaders/bgShader.frag";
 
+Shader *depthShader;
+static const char *depthVShader = "Shaders/depthShader.vert";
+static const char *depthFShader = "Shaders/depthShader.frag";
 
 void CreateShaders()
 {
@@ -61,71 +64,78 @@ void CreateShaders()
     Shader *shader3 = new Shader();
     shader3->CreateFromFiles(bgVShader, bgFShader);
     shaderList.push_back(shader3);
-}
 
-void CreateTriangle()
-{
-    GLfloat vertices[] =
-        {
-            // pos                  //TexCoord
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-            0.0, -1.0f, 1.0f, 0.5f, 0.0f,
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.5f, 1.0f};
-
-    unsigned int indices[] =
-        {
-            0,
-            3,
-            1,
-            1,
-            3,
-            2,
-            2,
-            3,
-            0,
-            0,
-            1,
-            2,
-        };
-
-    Mesh *obj1 = new Mesh();
-    obj1->CreateMesh(vertices, indices, 20, 12);
-    for (int i = 0; i < 10; i++)
-    {
-        meshList.push_back(obj1);
-    }
+    depthShader = new Shader();
+    depthShader->CreateFromFiles(depthVShader, depthFShader);
 }
 
 void CreateOBJ()
 {
     Mesh *obj2 = new Mesh();
     bool loaded = obj2->CreateMeshFromOBJ("Models/suzanne.obj");
-    if (loaded){
+    if (loaded)
+    {
         std::cout << "Suzanne loaded successfully!\n";
-        for (int i = 0; i < 10; i++){
+        for (int i = 0; i < 10; i++)
+        {
             meshList.push_back(obj2);
         }
     }
-    else{
-        std::cout<<"Failed to load model"<<std::endl;
+    else
+    {
+        std::cout << "Failed to load model" << std::endl;
     }
 
     light = new Mesh();
     loaded = light->CreateMeshFromOBJ("Models/cube.obj");
-    if (!loaded){
-        std::cout<<"Failed to load model"<<std::endl;
-        delete(light);
+    if (!loaded)
+    {
+        std::cout << "Failed to load model" << std::endl;
+        delete (light);
     }
 
     bg = new Mesh();
     loaded = bg->CreateMeshFromOBJ("Models/cube.obj");
-    if (!loaded){
-        std::cout<<"Failed to load model"<<std::endl;
-        delete(bg);
+    if (!loaded)
+    {
+        std::cout << "Failed to load model" << std::endl;
+        delete (bg);
     }
 }
 
+void RenderScene(glm::mat4 view, glm::mat4 projection)
+{
+    glm::vec3 pyramidPositions[] =
+        {
+            glm::vec3(0.0f, 0.0f, -2.5f),
+            glm::vec3(2.0f, 5.0f, -15.0f),
+            glm::vec3(-1.5f, -2.2f, -2.5f),
+            glm::vec3(-3.8f, -2.0f, -12.3f),
+            glm::vec3(2.4f, -0.4f, -3.5f),
+            glm::vec3(-1.7f, 3.0f, -7.5f),
+            glm::vec3(1.3f, -2.0f, -2.5f),
+            glm::vec3(1.5f, 2.0f, -2.5f),
+            glm::vec3(1.5f, 0.2f, -1.5f),
+            glm::vec3(-1.3f, 1.0f, -1.5f)};
+    // Object
+    for (int i = 0; i < 10; i++)
+    {
+        glm::mat4 model(1.0f);
+        model = glm::translate(model, pyramidPositions[i]);
+        model = glm::rotate(model, glm::radians(2.0f * i), glm::vec3(1.0f, 0.3f, 0.5f));
+        model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
+
+        glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+
+        GLint uniformTexture1 = shaderList[0]->GetUniformLocation("texture1");
+        glUniform1i(uniformTexture1, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        meshList[i]->RenderMesh();
+    }
+}
 
 int main()
 {
@@ -135,12 +145,11 @@ int main()
     CreateOBJ();
     CreateShaders();
 
-    GLuint uniformModel = 0, uniformProjection = 0, uniformView = 0;
+    // GLuint uniformModel = 0, uniformProjection = 0, uniformView = 0;
 
     glm::mat4 projection = glm::perspective(45.0f, (GLfloat)mainWindow.getBufferWidth() / (GLfloat)mainWindow.getBufferHeight(), 0.1f, 100.0f);
     // glm::mat4 projection = glm::ortho(-4.0f, 4.0f, -3.0f, 3.0f, 0.1f, 100.0f);
 
-    unsigned int texture1;
 
     glGenTextures(1, &texture1);
     glBindTexture(GL_TEXTURE_2D, texture1);
@@ -177,6 +186,27 @@ int main()
     glm::vec3 lightColour = glm::vec3(1.0f, 1.0f, 1.0f);
     glm::vec3 lightPos = glm::vec3(-10.0f, 0.0f, 0.0f);
 
+    // shadow
+    GLuint depthMapFBO;
+    glGenFramebuffers(1, &depthMapFBO);
+    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    GLuint depthMap;
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glEnable(GL_DEPTH_TEST);
+
     while (!mainWindow.getShouldClose())
     {
         // Get + Handle user input events
@@ -202,51 +232,67 @@ int main()
         glm::vec3 cameraRight = glm::normalize(glm::cross(cameraDirection, up));
         glm::vec3 cameraUp = glm::normalize(glm::cross(cameraRight, cameraDirection));
 
+        // Clear window
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // draw here
+        shaderList[0]->UseShader();
+        uniformModel = shaderList[0]->GetUniformLocation("model");
+        uniformView = shaderList[0]->GetUniformLocation("view");
+        uniformProjection = shaderList[0]->GetUniformLocation("projection");
+
+        glUniform3fv(shaderList[0]->GetUniformLocation("lightColour"), 1, (GLfloat *)&lightColour);
+        glUniform3fv(shaderList[0]->GetUniformLocation("lightPos"), 1, (GLfloat *)&lightPos);
+        glUniform3fv(shaderList[0]->GetUniformLocation("viewPos"), 1, (GLfloat *)&cameraPos);
+
+        // glm::mat4 view(1.0f);
+
         view = glm::lookAt(cameraPos, cameraPos + cameraDirection, cameraUp);
 
-        glm::vec3 pyramidPosition[] = {
-            glm::vec3(0.0f, 0.0f, -2.5f),
-            glm::vec3(2.0f, 5.0f, -15.0f),
-            glm::vec3(-1.5f, -2.2f, -2.5f),
-            glm::vec3(-3.8f, -2.0f, -12.3f),
-            glm::vec3(2.4f, -0.4f, -3.5f),
-            glm::vec3(-1.7f, 3.0f, -7.5f),
-            glm::vec3(1.3f, -2.0f, -2.5f),
-            glm::vec3(1.5f, 2.0f, -2.5f),
-            glm::vec3(1.5f, 0.2f, -1.5f),
-            glm::vec3(-1.3f, 1.0f, -1.5f)};
-
-
-        lightPos.x = 1.0f + sin(glfwGetTime()) *2.0f;
+        lightPos.x = 1.0f + sin(glfwGetTime()) * 2.0f;
         lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
-        lightPos.z = 0.0f; 
+        lightPos.z = 0.0f;
         // Object
-        for (int i = 0; i < 10; i++)
-        {
-            glm::mat4 model(1.0f);
 
-            model = glm::translate(model, pyramidPosition[i]);
-            model = glm::rotate(model, glm::radians(2.0f * i), glm::vec3(1.0f, 0.3f, 0.5f));
-            model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
+        // first pass: depth map
+        glViewport(0, 0, 1024, 1024);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-            glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-            glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+        glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, 0.1f, 20.0f);
+        glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, -2.5f), up);
 
-            GLint uniformTexture1 = shaderList[0]->GetUniformLocation("texture1");
-            glUniform1i(uniformTexture1, 0);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture1);
+        depthShader->UseShader();
+        uniformModel = depthShader->GetUniformLocation("model");
+        uniformView = depthShader->GetUniformLocation("view");
+        uniformProjection = depthShader->GetUniformLocation("projection");
 
-            glUniform3fv(shaderList[0]->GetUniformLocation("lightColour"), 1, (GLfloat *)&lightColour);
-            glUniform3fv(shaderList[0]->GetUniformLocation("lightPos"), 1, (GLfloat *)&lightPos);
-            glUniform3fv(shaderList[0]->GetUniformLocation("viewPos"), 1, (GLfloat *)&cameraPos);
+        glCullFace(GL_FRONT);
+        RenderScene(lightView, lightProjection);
+        glCullFace(GL_BACK);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            meshList[i]->RenderMesh();
-        }
+        // Object
+        shaderList[0]->UseShader();
+        uniformModel = shaderList[0]->GetUniformLocation("model");
+        uniformView = shaderList[0]->GetUniformLocation("view");
+        uniformProjection = shaderList[0]->GetUniformLocation("projection");
 
-        // RenderScene(view, projection);
-        // // Light
+        // rendering the scene
+        // second pass: scene
+        glViewport(0, 0, mainWindow.getBufferWidth(), mainWindow.getBufferHeight());
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        shaderList[0]->UseShader();
+        uniformModel = shaderList[0]->GetUniformLocation("model");
+        uniformView = shaderList[0]->GetUniformLocation("view");
+        uniformProjection = shaderList[0]->GetUniformLocation("projection");
+
+        RenderScene(view, projection);
+
+        // Light
         shaderList[1]->UseShader();
         uniformModel = shaderList[1]->GetUniformLocation("model");
         uniformView = shaderList[1]->GetUniformLocation("view");
@@ -264,23 +310,27 @@ int main()
         glUniform3fv(shaderList[1]->GetUniformLocation("lightColour"), 1, glm::value_ptr(lightColour));
         light->RenderMesh();
 
-        // Background
+        // bg
         shaderList[2]->UseShader();
         uniformModel = shaderList[2]->GetUniformLocation("model");
         uniformView = shaderList[2]->GetUniformLocation("view");
         uniformProjection = shaderList[2]->GetUniformLocation("projection");
 
+        glUniformMatrix4fv(shaderList[2]->GetUniformLocation("lightProjection"), 1, GL_FALSE, glm::value_ptr(lightProjection));
+        glUniformMatrix4fv(shaderList[2]->GetUniformLocation("lightView"), 1, GL_FALSE, glm::value_ptr(lightView));
+
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -10.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -16.0f));
         model = glm::scale(model, glm::vec3(20.0f, 20.0f, 0.1f));
 
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
-        glm::vec3 bgColour = glm::vec3(0.2f, 0.3f, 0.3f);
-        glUniform3fv(shaderList[2]->GetUniformLocation("bgColour"), 1,  (GLfloat *)&bgColour);
-
+        // bg colour
+        glm::vec3 bgColour = glm::vec3(1.0f, 0.5f, 0.5f);
+        glUniform3fv(shaderList[2]->GetUniformLocation("bgColour"), 1, (GLfloat *)&bgColour);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
         bg->RenderMesh();
 
         glUseProgram(0);
