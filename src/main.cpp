@@ -42,6 +42,11 @@ static const char *vShader = "Shaders/shader.vert";
 // Fragment Shader
 static const char *fShader = "Shaders/shader.frag";
 
+Mesh* bg;
+
+static const char* bgVShader = "Shaders/bgShader.vert";
+static const char* bgFShader = "Shaders/bgShader.frag";
+
 
 void CreateShaders()
 {
@@ -53,6 +58,9 @@ void CreateShaders()
     shader2->CreateFromFiles(lightVShader, lightFShader);
     shaderList.push_back(shader2);
 
+    Shader *shader3 = new Shader();
+    shader3->CreateFromFiles(bgVShader, bgFShader);
+    shaderList.push_back(shader3);
 }
 
 void CreateTriangle()
@@ -93,15 +101,14 @@ void CreateOBJ()
 {
     Mesh *obj2 = new Mesh();
     bool loaded = obj2->CreateMeshFromOBJ("Models/suzanne.obj");
-    if (loaded)
-    {
-        for (size_t i = 0; i < 10; i++)
-        {
+    if (loaded){
+        std::cout << "Suzanne loaded successfully!\n";
+        for (int i = 0; i < 10; i++){
             meshList.push_back(obj2);
         }
-        
-    } else {
-        std::cout << "OBJ loaded fail!" << std::endl;
+    }
+    else{
+        std::cout<<"Failed to load model"<<std::endl;
     }
 
     light = new Mesh();
@@ -111,7 +118,14 @@ void CreateOBJ()
         delete(light);
     }
 
+    bg = new Mesh();
+    loaded = bg->CreateMeshFromOBJ("Models/cube.obj");
+    if (!loaded){
+        std::cout<<"Failed to load model"<<std::endl;
+        delete(bg);
+    }
 }
+
 
 int main()
 {
@@ -231,8 +245,8 @@ int main()
             meshList[i]->RenderMesh();
         }
 
-
-        // Light
+        // RenderScene(view, projection);
+        // // Light
         shaderList[1]->UseShader();
         uniformModel = shaderList[1]->GetUniformLocation("model");
         uniformView = shaderList[1]->GetUniformLocation("view");
@@ -250,7 +264,25 @@ int main()
         glUniform3fv(shaderList[1]->GetUniformLocation("lightColour"), 1, glm::value_ptr(lightColour));
         light->RenderMesh();
 
-        
+        // Background
+        shaderList[2]->UseShader();
+        uniformModel = shaderList[2]->GetUniformLocation("model");
+        uniformView = shaderList[2]->GetUniformLocation("view");
+        uniformProjection = shaderList[2]->GetUniformLocation("projection");
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -10.0f));
+        model = glm::scale(model, glm::vec3(20.0f, 20.0f, 0.1f));
+
+        glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glm::vec3 bgColour = glm::vec3(0.2f, 0.3f, 0.3f);
+        glUniform3fv(shaderList[2]->GetUniformLocation("bgColour"), 1,  (GLfloat *)&bgColour);
+
+        bg->RenderMesh();
+
         glUseProgram(0);
         mainWindow.swapBuffers();
     }
