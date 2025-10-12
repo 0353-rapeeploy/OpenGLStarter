@@ -23,20 +23,26 @@ const GLint WIDTH = 800, HEIGHT = 600;
 Window mainWindow;
 std::vector<Mesh *> meshList;
 std::vector<Shader> shaderList;
+
+// Mesh* light;
+// static const char *lightVShader = "Shaders/lightShader.vert";
+// static const char *lightFShader = "Shaders/lightShader.frag";
+
 // Vertex Shader
 static const char *vShader = "Shaders/shader.vert";
-
 // Fragment Shader
 static const char *fShader = "Shaders/shader.frag";
 
-glm::vec3 lightColour = glm::vec3(1.0f, 1.0f, 1.0f);
-glm::vec3 lightPos = glm::vec3(5.0f, 5.0f, 0.0f);
 
 void CreateShaders()
 {
     Shader *shader1 = new Shader();
     shader1->CreateFromFiles(vShader, fShader);
     shaderList.push_back(*shader1);
+
+    // Shader *shader2 = new Shader();
+    // shader2->CreateFromFiles(lightVShader, lightFShader);
+    // shaderList.push_back(*shader2);
 }
 
 void CreateTriangle()
@@ -87,6 +93,13 @@ void CreateOBJ()
     } else {
         std::cout << "OBJ loaded fail!" << std::endl;
     }
+    
+    // light = new Mesh();
+    // loaded = light->CreateMeshFromOBJ("Models/cube.obj");
+    // if (!loaded)
+    // {
+    //     std::cout << "OBJ loaded fail!" << std::endl;
+    // }
 }
 
 int main()
@@ -136,6 +149,9 @@ int main()
         stbi_image_free(data1);
     }
 
+    glm::vec3 lightColour = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::vec3 lightPos = glm::vec3(-10.0f, 0.0f, 0.0f);
+
     while (!mainWindow.getShouldClose())
     {
         // Get + Handle user input events
@@ -153,7 +169,7 @@ int main()
 
         glm::mat4 view(1.0f);
 
-        glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 10.0f);
+        glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 15.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -175,6 +191,10 @@ int main()
             glm::vec3(1.5f, 0.2f, -1.5f),
             glm::vec3(-1.3f, 1.0f, -1.5f)};
 
+
+        lightPos.x = 1.0f + sin(glfwGetTime()) *2.0f;
+        lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
+        lightPos.z = 0.0f; 
         // Object
         for (int i = 0; i < 10; i++)
         {
@@ -199,6 +219,25 @@ int main()
 
             meshList[i]->RenderMesh();
         }
+
+
+        // // Light
+        // shaderList[1].UseShader();
+        // uniformModel = shaderList[1].GetUniformLocation("model");
+        // uniformView = shaderList[1].GetUniformLocation("view");
+        // uniformProjection = shaderList[1].GetUniformLocation("projection");
+
+        // glm::mat4 model(1.0f);
+
+        // model = glm::translate(model, lightPos);
+        // model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+
+        // glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
+        // glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+
+        // glUniform3fv(shaderList[1].GetUniformLocation("lightColour"), 1, glm::value_ptr(lightColour));
+        // light->RenderMesh();
 
         glUseProgram(0);
         mainWindow.swapBuffers();
